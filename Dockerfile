@@ -1,7 +1,7 @@
 FROM debian:stretch
 
 
-RUN apt update -y && apt upgrade -y && apt install -y build-essential screen netcat cmake wget gdb htop vim git libssl-dev libffi-dev tmux gdbserver gdb-multiarch zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev python3 python3-dev python3-pip python3-setuptools && rm -rf /var/lib/apt/lists/*
+RUN apt update -y && apt upgrade -y && apt install -y build-essential screen netcat cmake wget gdb htop vim git libssl-dev libffi-dev tmux gdbserver gdb-multiarch zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev python3 python3-dev python3-pip python3-setuptools libc6-dbg glibc-source && rm -rf /var/lib/apt/lists/*
 
 RUN curl -O https://www.python.org/ftp/python/3.9.5/Python-3.9.5.tar.xz
 RUN tar -xf Python-3.9.5.tar.xz
@@ -10,6 +10,8 @@ RUN cd Python-3.9.5 \
     && make -j 12 \
     && make altinstall
 
+RUN cd /usr/src/glibc \
+    && tar xvf glibc-2.24.tar.xz
 
 # Locales setup
 RUN apt-get update \
@@ -59,6 +61,9 @@ RUN echo "export PYTHONIOENCODING=UTF-8" >> ~/.bashrc
 # Angr for symbolic execution
 RUN python3.9 -m pip install --upgrade angr
 
+RUN echo "dir /usr/src/glibc/glibc-2.24/malloc/" >> ~/.gdbinit
+
+# ynet daemon
 ADD https://yx7.cc/code/ynetd/ynetd-0.1.2.tar.xz /ynetd-0.1.2.tar.xz
 
 RUN tar -xf ynetd-0.1.2.tar.xz
@@ -70,9 +75,10 @@ RUN useradd -m pwn
 #ADD vuln /home/pwn/vuln
 ADD start_server.sh /usr/local/bin/
 ADD init.sh /usr/local/bin/
+ADD banner /root/.banner
 RUN chmod +x /usr/local/bin/start_server.sh
 RUN chmod +x /usr/local/bin/init.sh
-
+RUN echo 'export PS1="\n\[\e[01;33m\]\u\[\e[0m\]\[\e[00;37m\]@\[\e[0m\]\[\e[01;36m\]\h\[\e[0m\]\[\e[00;37m\] \[\e[0m\]\[\e[01;35m\]\w\[\e[0m\]\[\e[01;37m\] \[\e[0m\]\n$ "' >> ~/.bashrc
 #RUN chmod 0755 /home/pwn/vuln
 
 EXPOSE 1337
